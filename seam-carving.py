@@ -44,45 +44,70 @@ def carveSeam(img, energy_cumulative, backtrack):
     h, w, _ = img.shape
     removal_mask = np.ones((h, w), dtype=bool)
     
+    # Calulate seam
     col = np.argmin(energy_cumulative[-1, :])
-
     for row in reversed(range(h)):
         removal_mask[row, col] = False
         col = backtrack[row, col]
 
+    # Draw seam
     red = np.zeros(img.shape, np.uint8)
     red[:] = (0, 0, 255)
-    
     fg = cv.bitwise_or(red, red, mask=np.invert(removal_mask).astype('uint8'))
     bg = cv.bitwise_or(img, img, mask=removal_mask.astype('uint8'))
-    final = cv.bitwise_or(fg, bg)
-    
-    return final
-    
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("-i", "--image", required=True,
-        help="Path to image")
-    args = vars(ap.parse_args())
-    
-    input_img = cv.imread(args['image'], cv.IMREAD_COLOR)
+    seam_img = cv.bitwise_or(fg, bg)
 
-    # 1) Create Energy Map
+    # Apply seam
+    stacked_mask = np.stack([removal_mask] * 3, axis=2)
+    trimmed_img = img[stacked_mask].reshape((h, w-1, 3))
+    
+    return seam_img, trimmed_img  
+    
+
+def seamCarve(input_img, axis=1, visualize=False):
+
     energy_map = computeEnergy(input_img)
 
-    # 2) Find 8-connected path of pixels with least energy
-    energy_cumulative, backtrack = minSeam(input_img, energy_map)
+    if axis == 0: # Trim rows
+        raise NotImplementedError
 
-    # 3) Delete all pixels in path
-    output_img = carveSeam(input_img, energy_cumulative, backtrack)
+    elif axis == 1: # Trim cols
+        energy_cumulative, backtrack = minSeam(input_img, energy_map)
+        _, trimmed_img = carveSeam(input_img, energy_cumulative, backtrack)
 
-    # 4) Loop until desired size reached
+    else:
+        raise ValueError('Invalid axis value')
+
+    return trimmed_img
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--image", required=True,
+        help="Path to image")
+    ap.add_argument("--width", required=False, default=1.0,
+        help="Target width [0-1]")
+    ap.add_argument("--height", required=False, default=1.0,
+        help="Target height [0-1]")
+    args = vars(ap.parse_args())
     
+    img = cv.imread(args['image'], cv.IMREAD_COLOR)
+    cv.imshow('image', img)
+
+
+    trim_width = img.shape[1] - int(img.shape[1] * float(args['width']))
+    for i in tqdm(range(trim_width)):
+        img = seamCarve(img, axis=1, visualize=False)
+
+    # trim_height = img.shape[0] - int(img.shape[0] * float(args['height']))
+    # for i in range(trim_height):
+    #     img = seamCarve(img, axis=0, visualize=False)
 
     # Display result
-    cv.imshow('image', input_img)
-    cv.imshow('energy', energy_map / energy_map.max())
-    cv.imshow('output', output_img)
+    cv.imshow('image', img)
+    # cv.imshow('energy', energy_map / energy_map.max())
+    # cv.imshow('seam', seam_img)
+    # cv.imshow('output', output_img)
     cv.waitKey(0)
     cv.destroyAllWindows()
 
