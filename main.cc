@@ -49,7 +49,7 @@ void minSeam(
     for (size_t row = 1; row < energy.rows; ++row)
     {
         auto energy_cumulative_ptr = energy_cumulative.ptr<uchar>(row);
-        auto backtrack_ptr = energy_cumulative.ptr<uchar>(row);
+        auto backtrack_ptr = backtrack.ptr<uchar>(row);
 
         for (size_t col = 0; col < energy.cols; ++col)
         {
@@ -75,7 +75,29 @@ void carveSeam(
     const cv::Mat &backtrack)
 {
     cv::Mat output;
-    // TODO
+
+    // Compute cumulative lowest energy pixel in bottom row
+    auto last_row = energy_cumulative.begin<uchar>()
+        + (energy_cumulative.rows - 1) * energy_cumulative.cols;
+    const auto result = std::min_element(
+        last_row, energy_cumulative.end<uchar>());
+    auto col = std::distance(last_row, result); 
+
+    // input.at<cv::Vec3b>(input.rows-1, col)[0] = 0;
+    // input.at<cv::Vec3b>(input.rows-1, col)[1] = 0;
+    // input.at<cv::Vec3b>(input.rows-1, col)[2] = 255;
+
+    // Track back through matrix to remove min cost seam
+    for (size_t row = energy_cumulative.rows - 1; signed(row) >= 0; --row)
+    {
+        std::cout << row << " " << col << "/" << energy_cumulative.cols << std::endl;
+        input.at<cv::Vec3b>(row, col)[0] = 0;
+        input.at<cv::Vec3b>(row, col)[1] = 0;
+        input.at<cv::Vec3b>(row, col)[2] = 255;
+
+        auto backtrack_ptr = backtrack.ptr<uchar>(row);
+        col = int(backtrack_ptr[col]);       
+    }
 }
 
 void seamCarveCol(cv::Mat &input)
@@ -83,7 +105,14 @@ void seamCarveCol(cv::Mat &input)
     const auto energy = computeEnergy(input);
     cv::Mat energy_cumulative, backtrack;
     minSeam(energy, energy_cumulative, backtrack);
+    
+    std::cout << "\n\ninput:\n" << input << std::endl;
+    std::cout << "\n\nenergy:\n" << energy_cumulative << std::endl;
+    std::cout << "\n\nbacktrack:\n" << backtrack << std::endl;
+    
     carveSeam(input, energy_cumulative, backtrack);
+
+
 }
 
 cv::Mat retargetImg(const cv::Mat &input, const int rows, const int cols)
@@ -92,23 +121,25 @@ cv::Mat retargetImg(const cv::Mat &input, const int rows, const int cols)
     const auto d_rows = rows - ret.rows;
     const auto d_cols = cols - ret.cols;
 
-    if (d_cols < 0)
-    {
-        for (int i = 0; i < abs(d_cols); ++i)
-            seamCarveCol(ret);
-    }
-    else if (d_cols > 0)
-    {
-        // TODO
-    }
-    if (d_rows < 0)
-    {
-        // TODO
-    }
-    else if (d_rows > 0)
-    {
-        // TODO
-    }
+    seamCarveCol(ret);
+
+    // if (d_cols < 0)
+    // {
+    //     for (int i = 0; i < abs(d_cols); ++i)
+    //         seamCarveCol(ret);
+    // }
+    // else if (d_cols > 0)
+    // {
+    //     // TODO
+    // }
+    // if (d_rows < 0)
+    // {
+    //     // TODO
+    // }
+    // else if (d_rows > 0)
+    // {
+    //     // TODO
+    // }
     return ret;
 }
 
@@ -145,6 +176,7 @@ int main(int argc, char *argv[])
 
     // Load original image
     cv::Mat img = cv::imread(img_path, cv::IMREAD_COLOR);
+    // cv::resize(img, img, cv::Size(200,200));
 
     // Generate retargeted image
     int target_rows = img.rows * height;
