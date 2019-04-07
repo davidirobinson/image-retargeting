@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vector>
+#include <chrono>
 #include <unistd.h>
 #include <iostream>
 #include <algorithm>
@@ -16,6 +17,23 @@ void print_usage()
 {
     std::cout << "USAGE: ./main -i <path-to-image> -w <%-width> -h <%-height>" << std::endl;
 }
+
+class ScopedTimer
+{
+public:
+    ScopedTimer() :
+        t_start(std::chrono::high_resolution_clock::now())
+    {}
+
+    ~ScopedTimer()
+    {
+        auto t_end = std::chrono::high_resolution_clock::now();
+        std::cout << std::chrono::duration<double, std::milli>(t_end - t_start).count() << std::endl;
+    }
+
+private:
+    const std::chrono::system_clock::time_point t_start;
+};
 
 cv::Mat computeEnergy(const cv::Mat &input)
 {
@@ -90,7 +108,7 @@ void carveSeam(
     // Track back through matrix to remove min cost seam
     for (size_t row = energy_cumulative.rows - 1; signed(row) >= 0; --row)
     {
-        std::cout << row << " " << col << "/" << energy_cumulative.cols << std::endl;
+        // std::cout << row << " " << col << "/" << energy_cumulative.cols << std::endl;
         input.at<cv::Vec3b>(row, col)[0] = 0;
         input.at<cv::Vec3b>(row, col)[1] = 0;
         input.at<cv::Vec3b>(row, col)[2] = 255;
@@ -102,17 +120,27 @@ void carveSeam(
 
 void seamCarveCol(cv::Mat &input)
 {
-    const auto energy = computeEnergy(input);
+    cv::Mat energy;
+    {
+        ScopedTimer st;
+        energy = computeEnergy(input);
+    }
+    
     cv::Mat energy_cumulative, backtrack;
-    minSeam(energy, energy_cumulative, backtrack);
-    
-    std::cout << "\n\ninput:\n" << input << std::endl;
-    std::cout << "\n\nenergy:\n" << energy_cumulative << std::endl;
-    std::cout << "\n\nbacktrack:\n" << backtrack << std::endl;
-    
-    carveSeam(input, energy_cumulative, backtrack);
+    {
+        ScopedTimer st;
+        minSeam(energy, energy_cumulative, backtrack);
+    }
 
+    // std::cout << "\n\ninput:\n" << input << std::endl;
+    // std::cout << "\n\nenergy:\n" << energy << std::endl;
+    // std::cout << "\n\nenergy_cumulative:\n" << energy_cumulative << std::endl;
+    // std::cout << "\n\nbacktrack:\n" << backtrack << std::endl;
 
+    {
+        ScopedTimer st;
+        carveSeam(input, energy_cumulative, backtrack);
+    }    
 }
 
 cv::Mat retargetImg(const cv::Mat &input, const int rows, const int cols)
@@ -123,23 +151,23 @@ cv::Mat retargetImg(const cv::Mat &input, const int rows, const int cols)
 
     seamCarveCol(ret);
 
-    // if (d_cols < 0)
-    // {
-    //     for (int i = 0; i < abs(d_cols); ++i)
-    //         seamCarveCol(ret);
-    // }
-    // else if (d_cols > 0)
-    // {
-    //     // TODO
-    // }
-    // if (d_rows < 0)
-    // {
-    //     // TODO
-    // }
-    // else if (d_rows > 0)
-    // {
-    //     // TODO
-    // }
+    if (d_cols < 0)
+    {
+        for (int i = 0; i < abs(d_cols); ++i)
+            seamCarveCol(ret);
+    }
+    else if (d_cols > 0)
+    {
+        // TODO
+    }
+    if (d_rows < 0)
+    {
+        // TODO
+    }
+    else if (d_rows > 0)
+    {
+        // TODO
+    }
     return ret;
 }
 
