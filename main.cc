@@ -43,17 +43,14 @@ void minSeam(
 {
     energy_cumulative = energy.clone();
     backtrack = cv::Mat::zeros(energy.size(), CV_8U);
-
-    // Create iterator for argmin computations
-    cv::MatConstIterator_<uchar> prev_row_iter = energy_cumulative.begin<uchar>();
     
-    // Begin with second row
+    auto prev_row_iter = energy_cumulative.begin<uchar>();
+    
     for (size_t row = 1; row < energy.rows; ++row)
     {
-        uchar* energy_cumulative_ptr = energy_cumulative.ptr<uchar>(row);
-        uchar* backtrack_ptr = energy_cumulative.ptr<uchar>(row);
+        auto energy_cumulative_ptr = energy_cumulative.ptr<uchar>(row);
+        auto backtrack_ptr = energy_cumulative.ptr<uchar>(row);
 
-        std::cout << "\n\n\n\n\nBegin\n\n\n\n\n" << std::endl;
         for (size_t col = 0; col < energy.cols; ++col)
         {
             // Deal with first and last column
@@ -65,34 +62,28 @@ void minSeam(
                 prev_row_iter - prev_col_range - 1, prev_row_iter + post_col_range);
             const auto idx = std::distance(prev_row_iter - prev_col_range - 1, result);
 
-            std::cout << "idx: " << idx << " result " << int(*result);
-            std::cout 
-                << "\nbefore: " << int(*(prev_row_iter - prev_col_range)) 
-                << " curr: " << int(*prev_row_iter) 
-                << " ahead: " << int(*(prev_row_iter + post_col_range)) << std::endl;
- 
-            for (auto it = prev_row_iter - prev_col_range - 1; it != prev_row_iter + post_col_range; ++it)
-            {
-                std::cout << int(*it) << " ";
-            }
-            std::cout << " test " << std::endl;
-
             backtrack_ptr[col] = idx + col - prev_col_range;
             energy_cumulative_ptr[col] += *result;
-
             prev_row_iter++;
         }
     }
 }
 
+void carveSeam(
+    cv::Mat &input, 
+    const cv::Mat &energy_cumulative,
+    const cv::Mat &backtrack)
+{
+    cv::Mat output;
+    // TODO
+}
+
 void seamCarveCol(cv::Mat &input)
 {
     const auto energy = computeEnergy(input);
-    cv::imshow("grad", energy);
-    cv::waitKey(0);
-
     cv::Mat energy_cumulative, backtrack;
     minSeam(energy, energy_cumulative, backtrack);
+    carveSeam(input, energy_cumulative, backtrack);
 }
 
 cv::Mat retargetImg(const cv::Mat &input, const int rows, const int cols)
@@ -101,9 +92,6 @@ cv::Mat retargetImg(const cv::Mat &input, const int rows, const int cols)
     const auto d_rows = rows - ret.rows;
     const auto d_cols = cols - ret.cols;
 
-    std::cout << d_rows << " " << d_cols << std::endl;
-
-    // Apply change to cols
     if (d_cols < 0)
     {
         for (int i = 0; i < abs(d_cols); ++i)
@@ -113,10 +101,14 @@ cv::Mat retargetImg(const cv::Mat &input, const int rows, const int cols)
     {
         // TODO
     }
-
-    // Apply change to cols
-    // TODO
-
+    if (d_rows < 0)
+    {
+        // TODO
+    }
+    else if (d_rows > 0)
+    {
+        // TODO
+    }
     return ret;
 }
 
@@ -151,24 +143,18 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    // Load original image
     cv::Mat img = cv::imread(img_path, cv::IMREAD_COLOR);
 
+    // Generate retargeted image
     int target_rows = img.rows * height;
     int target_cols = img.cols * width;
-
     cv::Mat retargeted_img = retargetImg(img, target_rows, target_cols);
     
-    // // cv::namedWindow("img", cv::WINDOW_NORMAL);
-    // cv::imshow("img", img);
-    // cv::imshow("retargeted", retargeted_img);
-    // cv::waitKey(0);
+    // Display results
+    cv::imshow("img", img);
+    cv::imshow("retargeted", retargeted_img);
+    cv::waitKey(0);
 
-    // while (cv::waitKey(30) != 'q')
-    // {    
-    //     std::cout << "loop" << std::endl;
-    //     img -= cv::Scalar(1,1,1);
-    //     cv::imshow("img", img);
-    // }
-    // cv::destroyWindow("img");
     return 0;
 }

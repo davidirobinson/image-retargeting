@@ -1,15 +1,22 @@
-# Seam Carving
+# Image Retargeting
 
 ## Overview
 TODO
 
 ## Deps / Build
-TODO
+
+OpenCV > 3.0
+
+```
+g++ main.cc `pkg-config --libs opencv` -o image-retargeting
+```
 
 ## Usage
-TODO
+```
+./image-retargeting -i <path-to-image> -w <%-width> -h <%-height>
+```
 
-## Todo
-- Port Python -> C++
-- Implement Callback
+## TODO
+- Finish C++ Implementation
 - Create shared lib
+- Implement Callback
