@@ -152,18 +152,28 @@ cv::Mat retargetImg(const cv::Mat &input, const int rows, const int cols)
     const auto d_rows = rows - ret.rows;
     const auto d_cols = cols - ret.cols;
 
+    std::cout << d_cols << " " << d_rows << std::endl;
+
     if (d_cols < 0)
     {
         for (int i = 0; i < abs(d_cols); ++i)
-            seamCarveCol(ret);
+        {
+            seamCarveCol(ret);   
+        }
     }
     else if (d_cols > 0)
     {
         // TODO
     }
+
     if (d_rows < 0)
     {
-        // TODO
+        cv::rotate(ret, ret, cv::ROTATE_90_CLOCKWISE);
+        for (int i = 0; i < abs(d_rows); ++i)
+        {
+            seamCarveCol(ret);
+        }
+        cv::rotate(ret, ret, cv::ROTATE_90_COUNTERCLOCKWISE);
     }
     else if (d_rows > 0)
     {
