@@ -1,19 +1,24 @@
 # Image Retargeting
 
 ## Overview
-TODO
+Implementation of the [seam carving algorithm](https://en.wikipedia.org/wiki/Seam_carving), which uses dynamic programming concepts to resize images in a manner which minimizes artifacts due to resizing.
 
-## Deps / Build
-
-OpenCV > 3.0
-
-```
-g++ main.cc `pkg-config --libs opencv` -o image-retargeting
-```
+TODO: Show example image
 
 ## Usage
+### Dependencies
+OpenCV > 3.0
+
+### Build
 ```
-./image-retargeting -i <path-to-image> -w <%-width> -h <%-height>
+mkdir build && cd build/
+cmake ..
+make -j<#-cores>
+```
+
+### Demo
+```
+./image_retargeter_demo -i <path-to-image> -w <%-width> -h <%-height>
 ```
 
 ## TODO
