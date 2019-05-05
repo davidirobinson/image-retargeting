@@ -13,7 +13,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
 
-#include <image_retargeter.hh>
+#include <seam_carving.hh>
 
 void print_usage()
 {
@@ -48,25 +48,34 @@ int main(int argc, char *argv[])
     if (img_path.empty())
     {
         print_usage();
-        return 1;
+        return -1;
     }
     else if (width == 1.0f && height == 1.0f)
     {
         std::cerr << "WARNING: No width or height change specified" << std::endl;
     }
 
-    // Load original image and construct image retargeter
+    // Load original image and check that it's valid
     cv::Mat img = cv::imread(img_path, cv::IMREAD_COLOR);
-    const auto image_retargeter = std::make_unique<ImageRetargeter>(img);
+
+    if(!img.data)
+    {
+        std::cout <<  "Could not open or find the image" << std::endl;
+        print_usage();
+        return -1;
+    }
+
+    // Construct image retargeter
+    const auto seam_carving = std::make_unique<SeamCarving>(img);
 
     // Generate retargeted image
     const int target_rows = img.rows * height;
     const int target_cols = img.cols * width;
-    image_retargeter->retarget(target_rows, target_cols);
+    seam_carving->retarget(target_rows, target_cols);
 
     // Display results
-    cv::imshow("img", img);
-    cv::imshow("retargeted", image_retargeter->getImage());
+    cv::imshow("original", img);
+    cv::imshow("retargeted", seam_carving->getImage());
     cv::waitKey(0);
 
     return 0;

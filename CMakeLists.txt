@@ -1,6 +1,6 @@
 
 cmake_minimum_required (VERSION 3.0)
-project (IMAGE_RETARGETING)
+project (SEAM_CARVING_DEMO)
 
 find_package(OpenCV 3.0 REQUIRED)
 

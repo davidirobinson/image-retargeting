@@ -1,8 +1,8 @@
 
 #pragma once
 
-#include <opencv2/opencv.hpp>
 #include <chrono>
+#include <opencv2/opencv.hpp>
 
 class ScopedTimer
 {
@@ -26,10 +26,10 @@ struct TimingInfo
     // TODO
 };
 
-class ImageRetargeter
+class SeamCarving
 {
 public:
-    explicit ImageRetargeter(const cv::Mat &_image) :
+    explicit SeamCarving(const cv::Mat &_image) :
         image(_image)
     {}
 

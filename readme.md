@@ -1,4 +1,4 @@
-# Image Retargeting
+# Seam Carving
 
 ## Overview
 Implementation of the [seam carving algorithm](https://en.wikipedia.org/wiki/Seam_carving), which uses dynamic programming concepts to resize images in a manner which minimizes artifacts due to resizing.
@@ -18,7 +18,8 @@ make -j<#-cores>
 
 ### Demo
 ```
-./image_retargeter_demo -i <path-to-image> -w <%-width> -h <%-height>
+cd build/src/
+./seam_carving_demo -i <path-to-image> -w <%-width> -h <%-height>
 ```
 
 ## TODO
