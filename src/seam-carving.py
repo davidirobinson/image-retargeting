@@ -16,8 +16,8 @@ def computeEnergy(img):
         scale=1, delta=0, borderType=cv.BORDER_DEFAULT)
     return np.abs(dx) + np.abs(dy)
 
-def minSeam(img, energy_map):
-    h, w, _ = img.shape
+def minSeam(energy_map):
+    h, w = energy_map.shape
     M = energy_map.copy()
     backtrack = np.zeros_like(M, dtype=np.int)
 
@@ -65,10 +65,16 @@ def carveSeam(img, energy_cumulative, backtrack):
     
 def seamCarve(input_img, axis=1, visualize=False):
     energy_map = computeEnergy(input_img)
+
     if axis == 0: # Trim rows
         raise NotImplementedError
     elif axis == 1: # Trim cols
-        energy_cumulative, backtrack = minSeam(input_img, energy_map)
+        energy_cumulative, backtrack = minSeam(energy_map)
+
+        print ("energy_map\n", energy_map)
+        print ("energy_cumulative\n", energy_cumulative)
+        print ("backtrack\n", backtrack)
+
         _, trimmed_img = carveSeam(input_img, energy_cumulative, backtrack)
     else:
         raise ValueError('Invalid axis value')
@@ -85,9 +91,15 @@ def main():
     args = vars(ap.parse_args())
     
     img = cv.imread(args['image'], cv.IMREAD_COLOR)
+
+    img = cv.resize(img,(10,10))
+
     cv.imshow('input', img)
 
-    trim_width = img.shape[1] - int(img.shape[1] * float(args['width']))
+    # trim_width = img.shape[1] - int(img.shape[1] * float(args['width']))
+
+    trim_width = 1
+
     for i in tqdm(range(trim_width)):
         img = seamCarve(img, axis=1, visualize=False)
 
