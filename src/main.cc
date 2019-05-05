@@ -90,13 +90,14 @@ void minSeam(
 
 void carveSeam(
     cv::Mat &input, 
+    cv::Mat &output,
     const cv::Mat &energy_cumulative,
     const cv::Mat &backtrack)
 {
-    cv::Mat output;
+    output = cv::Mat::zeros(cv::Size(input.cols-1, input.rows), input.type());
 
     // Compute cumulative lowest energy pixel in bottom row
-    auto last_row = energy_cumulative.begin<ushort>()
+    const auto last_row = energy_cumulative.begin<ushort>()
         + (energy_cumulative.rows - 1) * energy_cumulative.cols;
     const auto result = std::min_element(
         last_row, energy_cumulative.end<ushort>());
@@ -105,13 +106,18 @@ void carveSeam(
     // Track back through matrix to remove min cost seam
     for (size_t row = energy_cumulative.rows - 1; signed(row) >= 0; --row)
     {
-        // Draw seam
+        // Draw seam (debug)
         input.at<cv::Vec3b>(row, col)[0] = 0;
         input.at<cv::Vec3b>(row, col)[1] = 0;
         input.at<cv::Vec3b>(row, col)[2] = 255;
 
+        // Assign pixels in the current row, ommitting our min cost seam
+        input.row(row).colRange(0, col).copyTo(output.row(row).colRange(0, col));
+        input.row(row).colRange(col + 1, input.cols).copyTo(output.row(row).colRange(col, output.cols));
+
+        // Update min cost seam
         auto backtrack_ptr = backtrack.ptr<ushort>(row);
-        col = int(backtrack_ptr[col]);       
+        col = int(backtrack_ptr[col]);
     }
 }
 
@@ -131,11 +137,13 @@ void seamCarveCol(cv::Mat &input)
         std::cout << "Min Seam: ";
     }
 
+    cv::Mat output;
     {
         ScopedTimer st;
-        carveSeam(input, energy_cumulative, backtrack);
+        carveSeam(input, output, energy_cumulative, backtrack);
         std::cout << "Carve Seam: ";
-    }    
+    }
+    input = output;
 }
 
 cv::Mat retargetImg(const cv::Mat &input, const int rows, const int cols)
@@ -143,8 +151,6 @@ cv::Mat retargetImg(const cv::Mat &input, const int rows, const int cols)
     auto ret = input.clone();
     const auto d_rows = rows - ret.rows;
     const auto d_cols = cols - ret.cols;
-
-    seamCarveCol(ret);
 
     if (d_cols < 0)
     {

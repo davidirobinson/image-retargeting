@@ -17,6 +17,5 @@ g++ main.cc `pkg-config --libs opencv` -o image-retargeting
 ```
 
 ## TODO
-- Finish C++ Implementation
-- Create shared lib
+- Wrap implementation in class
 - Implement Callback
