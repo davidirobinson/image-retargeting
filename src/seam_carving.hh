@@ -35,9 +35,7 @@ struct TimingInfo
 class SeamCarving
 {
 public:
-    explicit SeamCarving(const cv::Mat &_image) :
-        image(_image)
-    {}
+    explicit SeamCarving(const cv::Mat &_image);
 
     void retarget(const int target_rows, const int target_cols)
     {
@@ -80,14 +78,24 @@ public:
         return image;
     }
 
-    TimingInfo getTimingInfo()
+    cv::Mat getEnergyMap()
     {
-        return TimingInfo{};
+        return energy;
+    }
+
+    cv::Mat getSeamImage()
+    {
+        return image;
+    }
+
+    void printReport()
+    {
+        std::cout << "printReport() not yet implemented" << std::endl;
     }
 
 private:
 
-    cv::Mat computeEnergy(const cv::Mat &input)
+    void computeEnergy(const cv::Mat &input)
     {
         cv::Mat filtered;
         cv::cvtColor(input, filtered, cv::COLOR_BGR2GRAY);
@@ -101,9 +109,8 @@ private:
         cv::convertScaleAbs(dx, dx_abs);
         cv::convertScaleAbs(dy, dy_abs);
 
-        cv::Mat energy;
         cv::addWeighted(dx_abs, 0.5, dy_abs, 0.5, 0, energy);
-        return energy;
+        energy_computed = true;
     }
 
     void minSeam(
@@ -177,7 +184,7 @@ private:
     {
         {
             ScopedTimer st;
-            energy = computeEnergy(input);
+            computeEnergy(input);
             std::cout << "Energy: ";
         }
 
@@ -197,6 +204,9 @@ private:
         input = output;
     }
 
-    cv::Mat image;
+    cv::Mat original;
+    cv::Mat seam_image;
     cv::Mat energy;
+
+    bool energy_computed;
 };

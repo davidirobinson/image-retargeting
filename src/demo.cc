@@ -19,7 +19,7 @@
 
 void print_usage()
 {
-    std::cerr << "USAGE: ./main -i <path-to-image> -w <%-width> -h <%-height>" << std::endl;
+    std::cerr << "USAGE: ./main -i <path-to-image> -w <%-width> -h <%-height> -v <verbose-flag>" << std::endl;
 }
 
 int main(int argc, char *argv[])
@@ -27,9 +27,10 @@ int main(int argc, char *argv[])
     int option = -1;
     float width = 1.0f;
     float height = 1.0f;
+    bool verbose = false;
     std::string img_path;
 
-    while ((option = getopt (argc, argv, "i:w:h:")) != -1)
+    while ((option = getopt (argc, argv, "i:w:h:v")) != -1)
     {
         switch (option)
         {
@@ -41,6 +42,9 @@ int main(int argc, char *argv[])
                 break;
             case 'h':
                 height = atof(optarg);
+                break;
+            case 'v':
+                verbose = true;
                 break;
             default:
                 break;
@@ -76,8 +80,16 @@ int main(int argc, char *argv[])
     seam_carving->retarget(target_rows, target_cols);
 
     // Display results
-    cv::imshow("original", img);
-    cv::imshow("retargeted", seam_carving->getImage());
+    cv::imshow("Original Image", img);
+    cv::imshow("Retargeted Image", seam_carving->getImage());
+
+    if (verbose)
+    {
+        seam_carving->printReport();
+        cv::imshow("Minimum Cost Seams", seam_carving->getSeamImage());
+        cv::imshow("Energy Map", seam_carving->getEnergyMap());
+    }
+
     cv::waitKey(0);
 
     return 0;
