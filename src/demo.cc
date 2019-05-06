@@ -28,14 +28,14 @@ int main(int argc, char *argv[])
     float width = 1.0f;
     float height = 1.0f;
     bool verbose = false;
-    std::string img_path;
+    std::string image_path;
 
     while ((option = getopt (argc, argv, "i:w:h:v")) != -1)
     {
         switch (option)
         {
             case 'i':
-                img_path = std::string(optarg);
+                image_path = std::string(optarg);
                 break;
             case 'w':
                 width = atof(optarg);
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (img_path.empty())
+    if (image_path.empty())
     {
         print_usage();
         return -1;
@@ -62,9 +62,9 @@ int main(int argc, char *argv[])
     }
 
     // Load original image and check that it's valid
-    cv::Mat img = cv::imread(img_path, cv::IMREAD_COLOR);
+    cv::Mat image = cv::imread(image_path, cv::IMREAD_COLOR);
 
-    if(!img.data)
+    if(!image.data)
     {
         std::cout <<  "Could not open or find the image" << std::endl;
         print_usage();
@@ -72,15 +72,15 @@ int main(int argc, char *argv[])
     }
 
     // Construct image retargeter
-    const auto seam_carving = std::make_unique<SeamCarving>(img);
+    const auto seam_carving = std::make_unique<SeamCarving>(image);
 
     // Generate retargeted image
-    const int target_rows = img.rows * height;
-    const int target_cols = img.cols * width;
+    const int target_rows = image.rows * height;
+    const int target_cols = image.cols * width;
     seam_carving->retarget(target_rows, target_cols);
 
     // Display results
-    cv::imshow("Original Image", img);
+    cv::imshow("Original Image", image);
     cv::imshow("Retargeted Image", seam_carving->getImage());
 
     if (verbose)

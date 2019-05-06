@@ -39,15 +39,15 @@ public:
 
     void retarget(const int target_rows, const int target_cols)
     {
-        const auto d_rows = target_rows - image.rows;
-        const auto d_cols = target_cols - image.cols;
+        const auto d_rows = target_rows - m_output_image.rows;
+        const auto d_cols = target_cols - m_output_image.cols;
 
-        // Resize columns
+        // Retarget columns
         if (d_cols < 0)
         {
             for (int i = 0; i < abs(d_cols); ++i)
             {
-                seamCarveColumn(image);
+                removeMinEnergyColumn(m_output_image);
             }
         }
         else if (d_cols > 0)
@@ -56,15 +56,15 @@ public:
                 "Increasing the width of the image is not yet supported");
         }
 
-        // Resize Rows
+        // Retarget Rows
         if (d_rows < 0)
         {
-            cv::rotate(image, image, cv::ROTATE_90_CLOCKWISE);
+            cv::rotate(m_output_image, m_output_image, cv::ROTATE_90_CLOCKWISE);
             for (int i = 0; i < abs(d_rows); ++i)
             {
-                seamCarveColumn(image);
+                removeMinEnergyColumn(m_output_image);
             }
-            cv::rotate(image, image, cv::ROTATE_90_COUNTERCLOCKWISE);
+            cv::rotate(m_output_image, m_output_image, cv::ROTATE_90_COUNTERCLOCKWISE);
         }
         else if (d_rows > 0)
         {
@@ -75,17 +75,17 @@ public:
 
     cv::Mat getImage()
     {
-        return image;
+        return m_output_image;
     }
 
     cv::Mat getEnergyMap()
     {
-        return energy;
+        return m_energy_image;
     }
 
     cv::Mat getSeamImage()
     {
-        return image;
+        return m_seam_image;
     }
 
     void printReport()
@@ -95,7 +95,7 @@ public:
 
 private:
 
-    void computeEnergy(const cv::Mat &input)
+    void computeEnergy(const cv::Mat &input, cv::Mat &energy)
     {
         cv::Mat filtered;
         cv::cvtColor(input, filtered, cv::COLOR_BGR2GRAY);
@@ -113,7 +113,7 @@ private:
         energy_computed = true;
     }
 
-    void minSeam(
+    void computeMinSeam(
         const cv::Mat &energy,
         cv::Mat &energy_cumulative,
         cv::Mat &backtrack)
@@ -140,7 +140,7 @@ private:
                     prev_row_iter - prev_col_range, prev_row_iter + post_col_range);
                 const auto idx = std::distance(prev_row_iter - prev_col_range, result);
 
-                backtrack_ptr[col] = idx - prev_col_range + col ;
+                backtrack_ptr[col] = idx - prev_col_range + col;
                 energy_cumulative_ptr[col] += *result;
                 prev_row_iter++;
             }
@@ -150,6 +150,7 @@ private:
     void carveSeam(
         cv::Mat &input,
         cv::Mat &output,
+        cv::Mat &seam,
         const cv::Mat &energy_cumulative,
         const cv::Mat &backtrack)
     {
@@ -165,10 +166,10 @@ private:
         // Track back through matrix to remove min cost seam
         for (size_t row = energy_cumulative.rows - 1; signed(row) >= 0; --row)
         {
-            // Draw seam (debug)
-            input.at<cv::Vec3b>(row, col)[0] = 0;
-            input.at<cv::Vec3b>(row, col)[1] = 0;
-            input.at<cv::Vec3b>(row, col)[2] = 255;
+            // Draw seam over original image
+            seam.at<cv::Vec3b>(row, col)[0] = 0;
+            seam.at<cv::Vec3b>(row, col)[1] = 0;
+            seam.at<cv::Vec3b>(row, col)[2] = 255;
 
             // Assign pixels in the current row, ommitting our min cost seam
             input.row(row).colRange(0, col).copyTo(output.row(row).colRange(0, col));
@@ -180,33 +181,23 @@ private:
         }
     }
 
-    void seamCarveColumn(cv::Mat &input)
+    void removeMinEnergyColumn(cv::Mat &input)
     {
-        {
-            ScopedTimer st;
-            computeEnergy(input);
-            std::cout << "Energy: ";
-        }
+        computeEnergy(input, m_energy_image);
 
         cv::Mat energy_cumulative, backtrack;
-        {
-            ScopedTimer st;
-            minSeam(energy, energy_cumulative, backtrack);
-            std::cout << "Min Seam: ";
-        }
+        computeMinSeam(m_energy_image, energy_cumulative, backtrack);
 
         cv::Mat output;
-        {
-            ScopedTimer st;
-            carveSeam(input, output, energy_cumulative, backtrack);
-            std::cout << "Carve Seam: ";
-        }
+        m_seam_image = input.clone();
+        carveSeam(input, output, m_seam_image, energy_cumulative, backtrack);
         input = output;
     }
 
-    cv::Mat original;
-    cv::Mat seam_image;
-    cv::Mat energy;
+    cv::Mat m_original_image;
+    cv::Mat m_output_image;
+    cv::Mat m_seam_image;
+    cv::Mat m_energy_image;
 
     bool energy_computed;
 };

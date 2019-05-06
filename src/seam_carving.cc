@@ -10,6 +10,10 @@
 SeamCarving::SeamCarving(const cv::Mat &_image) :
     energy_computed(false)
 {
-    original = _image.clone();
-    seam_image = _image.clone();
+    m_original_image = _image.clone();
+    m_output_image = _image.clone();
+    m_seam_image = _image.clone();
+
+    // Compute energy upon contruction so that getter is valid
+    computeEnergy(_image, m_energy_image);
 }
