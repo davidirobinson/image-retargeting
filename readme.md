@@ -3,8 +3,6 @@
 ## Overview
 Implementation of the [seam carving algorithm](https://en.wikipedia.org/wiki/Seam_carving), which uses dynamic programming concepts to resize images in a manner which minimizes artifacts due to resizing.
 
-TODO: Show example image
-
 ## Usage
 ### Dependencies
 OpenCV > 3.0
@@ -23,5 +21,8 @@ cd build/src/
 ```
 
 ## TODO
-- Wrap implementation in class
-- Implement Callback
+- Add timing info and report
+- Support increasing the size of images
+- Make agnostic to image channel size
+- Show example image in readme
+- Add docs to header
