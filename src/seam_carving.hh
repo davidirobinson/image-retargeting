@@ -10,28 +10,6 @@
 #include <chrono>
 #include <opencv2/opencv.hpp>
 
-class ScopedTimer
-{
-public:
-    ScopedTimer() :
-        t_start(std::chrono::high_resolution_clock::now())
-    {}
-
-    ~ScopedTimer()
-    {
-        auto t_end = std::chrono::high_resolution_clock::now();
-        std::cout << std::chrono::duration<double, std::milli>(t_end - t_start).count() << std::endl;
-    }
-
-private:
-    const std::chrono::system_clock::time_point t_start;
-};
-
-struct TimingInfo
-{
-    // TODO
-};
-
 class SeamCarving
 {
 public:
