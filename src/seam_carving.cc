@@ -54,7 +54,27 @@ void SeamCarving::retarget(const int target_rows, const int target_cols)
 
 void SeamCarving::printReport()
 {
-    std::cout << "printReport() not yet implemented" << std::endl;
+    const auto mean_energy_map_time =
+        std::accumulate(timing_info.energy_map.begin(), timing_info.energy_map.end(), 0.0) /
+        static_cast<double>(timing_info.energy_map.size());
+
+    const auto mean_compute_seam_time =
+        std::accumulate(timing_info.compute_seam.begin(), timing_info.compute_seam.end(), 0.0) /
+        static_cast<double>(timing_info.compute_seam.size());
+
+    const auto mean_remove_seam_time =
+        std::accumulate(timing_info.remove_seam.begin(), timing_info.remove_seam.end(), 0.0) /
+        static_cast<double>(timing_info.remove_seam.size());
+
+    std::cout
+        << "Seam Carving Report\n"
+        << "-------------------\n\n"
+        << "Original image size:    " << m_original_image.size() << "\n"
+        << "Retargeted image size:  " << m_retargeted_image.size() << "\n\n"
+        << "Mean Energy Map Generation Time:    " << mean_energy_map_time << "ms\n"
+        << "Mean Min Seam Calulation Duration:  " << mean_compute_seam_time << "ms\n"
+        << "Mean Min Seam Removal Duration:     " << mean_remove_seam_time << "ms"
+        << std::endl;
 }
 
 void SeamCarving::computeEnergy(const cv::Mat &input, cv::Mat &energy)
@@ -76,10 +96,24 @@ void SeamCarving::computeEnergy(const cv::Mat &input, cv::Mat &energy)
 
 void SeamCarving::removeMinEnergySeam(cv::Mat &input)
 {
+    TimePoint t_start;
+    TimePoint t_end;
+
+    //
     // Compute the energy in the image
+    //
+    t_start = std::chrono::high_resolution_clock::now();
+
     computeEnergy(input, m_energy_image);
 
+    t_end = std::chrono::high_resolution_clock::now();
+    timing_info.energy_map.push_back(DeltaTimePoint(t_end - t_start).count());
+
+    //
     // Compute the minimum energy seam in the energy image
+    //
+    t_start = std::chrono::high_resolution_clock::now();
+
     cv::Mat energy_cumulative = m_energy_image.clone();
     energy_cumulative.convertTo(energy_cumulative, CV_16U);
     cv::Mat backtrack = cv::Mat::zeros(m_energy_image.size(), CV_16U);
@@ -107,6 +141,14 @@ void SeamCarving::removeMinEnergySeam(cv::Mat &input)
             prev_row_iter++;
         }
     }
+
+    t_end = std::chrono::high_resolution_clock::now();
+    timing_info.compute_seam.push_back(DeltaTimePoint(t_end - t_start).count());
+
+    //
+    // Remove the minimum cost seam
+    //
+    t_start = std::chrono::high_resolution_clock::now();
 
     // Create output image with one less column
     cv::Mat output = cv::Mat::zeros(cv::Size(input.cols-1, input.rows), input.type());
@@ -137,6 +179,9 @@ void SeamCarving::removeMinEnergySeam(cv::Mat &input)
         auto backtrack_ptr = backtrack.ptr<ushort>(row);
         col = int(backtrack_ptr[col]);
     }
+
+    t_end = std::chrono::high_resolution_clock::now();
+    timing_info.remove_seam.push_back(DeltaTimePoint(t_end - t_start).count());
 
     // Copy reference to output
     input = output;

@@ -8,7 +8,18 @@
 #pragma once
 
 #include <chrono>
+#include <numeric>
 #include <opencv2/opencv.hpp>
+
+using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
+using DeltaTimePoint = std::chrono::duration<double, std::milli>;
+
+struct TimingInfo
+{
+    std::vector<DeltaTimePoint::rep> energy_map;
+    std::vector<DeltaTimePoint::rep> compute_seam;
+    std::vector<DeltaTimePoint::rep> remove_seam;
+};
 
 class SeamCarving
 {
@@ -88,4 +99,5 @@ private:
     cv::Mat m_retargeted_image;
     cv::Mat m_seam_image;
     cv::Mat m_energy_image;
+    TimingInfo timing_info;
 };

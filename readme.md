@@ -21,7 +21,6 @@ cd build/src/
 ```
 
 ## TODO
-- Add timing info and report
 - Show example image in readme
 - Make agnostic to image channel size
 - Support increasing the size of images
