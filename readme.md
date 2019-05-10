@@ -1,13 +1,12 @@
 # Image Retargeting
 
-## Overview
-Implementation of the [seam carving algorithm](https://en.wikipedia.org/wiki/Seam_carving), which uses dynamic programming concepts to resize images in a manner which minimizes artifacts due to resizing.
+A C++ implementation of the [seam carving algorithm](https://en.wikipedia.org/wiki/Seam_carving) to perform content-aware image resizing. THe algorithm works by searching for the lowest energy 'seam' in the image using dynamic programming techniques, and then removing that seam to reduce the size of the image, as below.
 
 ![seam-carving-demo](https://drive.google.com/uc?export=download&id=1m9_rYT0iicvadZGN3bbqUrUBroS_KZlR)
 
 ## Usage
 ### Dependencies
-OpenCV > 3.0
+OpenCV >= 3.0
 
 ### Build
 ```
