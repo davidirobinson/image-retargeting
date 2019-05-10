@@ -33,28 +33,47 @@ void SeamCarving::retarget(const int target_rows, const int target_cols)
         for (int i = 0; i < abs(d_cols); ++i)
         {
             removeMinEnergySeam(m_retargeted_image);
+
+            cv::Mat tmp_white = cv::Mat(m_original_image.size(), CV_8UC3, cv::Scalar(255,255,255));
+            m_seam_image.copyTo(tmp_white(cv::Rect(0,0,m_seam_image.cols, m_seam_image.rows)));
+
+            std::ostringstream ss;
+            ss << std::setw(4) << std::setfill('0') << i;
+            std::string str = ss.str();
+            if (i%2 == 0) cv::imwrite("/tmp/images/a_"+str+".jpg", tmp_white);
         }
     }
     else if (d_cols > 0)
     {
         throw std::runtime_error(
-            "Increasing the width of the image is not yet supported");
+            "Increasing the width of the image is not supported");
     }
 
     // Retarget Rows
     if (d_rows < 0)
     {
-        cv::rotate(m_retargeted_image, m_retargeted_image, cv::ROTATE_90_CLOCKWISE);
         for (int i = 0; i < abs(d_rows); ++i)
         {
+            cv::rotate(m_retargeted_image, m_retargeted_image, cv::ROTATE_90_CLOCKWISE);
             removeMinEnergySeam(m_retargeted_image);
+
+            cv::rotate(m_retargeted_image, m_retargeted_image, cv::ROTATE_90_COUNTERCLOCKWISE);
+            cv::rotate(m_seam_image, m_seam_image, cv::ROTATE_90_COUNTERCLOCKWISE);
+            cv::rotate(m_energy_image, m_energy_image, cv::ROTATE_90_COUNTERCLOCKWISE);
+
+            cv::Mat tmp_white = cv::Mat(m_original_image.size(), CV_8UC3, cv::Scalar(255,255,255));
+            m_seam_image.copyTo(tmp_white(cv::Rect(0,0,m_seam_image.cols, m_seam_image.rows)));
+
+            std::ostringstream ss;
+            ss << std::setw(4) << std::setfill('0') << i;
+            std::string str = ss.str();
+            if (i%2 == 0) cv::imwrite("/tmp/images/b_"+str+".jpg", tmp_white);
         }
-        cv::rotate(m_retargeted_image, m_retargeted_image, cv::ROTATE_90_COUNTERCLOCKWISE);
     }
     else if (d_rows > 0)
     {
         throw std::runtime_error(
-            "Increasing the height of the image is not yet supported");
+            "Increasing the height of the image is not supported");
     }
 }
 
