@@ -9,7 +9,7 @@
 
 SeamCarving::SeamCarving(const cv::Mat &_image) :
     m_original_image(_image.clone()),
-    m_output_image(_image.clone()),
+    m_retargeted_image(_image.clone()),
     m_seam_image(_image.clone())
 {
     // Compute energy upon contruction so that getter is valid
@@ -18,15 +18,15 @@ SeamCarving::SeamCarving(const cv::Mat &_image) :
 
 void SeamCarving::retarget(const int target_rows, const int target_cols)
 {
-    const auto d_rows = target_rows - m_output_image.rows;
-    const auto d_cols = target_cols - m_output_image.cols;
+    const auto d_rows = target_rows - m_retargeted_image.rows;
+    const auto d_cols = target_cols - m_retargeted_image.cols;
 
     // Retarget columns
     if (d_cols < 0)
     {
         for (int i = 0; i < abs(d_cols); ++i)
         {
-            removeMinEnergyColumn(m_output_image);
+            removeMinEnergySeam(m_retargeted_image);
         }
     }
     else if (d_cols > 0)
@@ -38,12 +38,12 @@ void SeamCarving::retarget(const int target_rows, const int target_cols)
     // Retarget Rows
     if (d_rows < 0)
     {
-        cv::rotate(m_output_image, m_output_image, cv::ROTATE_90_CLOCKWISE);
+        cv::rotate(m_retargeted_image, m_retargeted_image, cv::ROTATE_90_CLOCKWISE);
         for (int i = 0; i < abs(d_rows); ++i)
         {
-            removeMinEnergyColumn(m_output_image);
+            removeMinEnergySeam(m_retargeted_image);
         }
-        cv::rotate(m_output_image, m_output_image, cv::ROTATE_90_COUNTERCLOCKWISE);
+        cv::rotate(m_retargeted_image, m_retargeted_image, cv::ROTATE_90_COUNTERCLOCKWISE);
     }
     else if (d_rows > 0)
     {
@@ -74,27 +74,28 @@ void SeamCarving::computeEnergy(const cv::Mat &input, cv::Mat &energy)
     cv::addWeighted(dx_abs, 0.5, dy_abs, 0.5, 0, energy);
 }
 
-void SeamCarving::computeMinSeam(
-    const cv::Mat &energy,
-    cv::Mat &energy_cumulative,
-    cv::Mat &backtrack)
+void SeamCarving::removeMinEnergySeam(cv::Mat &input)
 {
-    energy_cumulative = energy.clone();
+    // Compute the energy in the image
+    computeEnergy(input, m_energy_image);
+
+    // Compute the minimum energy seam in the energy image
+    cv::Mat energy_cumulative = m_energy_image.clone();
     energy_cumulative.convertTo(energy_cumulative, CV_16U);
-    backtrack = cv::Mat::zeros(energy.size(), CV_16U);
+    cv::Mat backtrack = cv::Mat::zeros(m_energy_image.size(), CV_16U);
 
     auto prev_row_iter = energy_cumulative.begin<ushort>();
 
-    for (size_t row = 1; row < energy.rows; ++row)
+    for (size_t row = 1; row < m_energy_image.rows; ++row)
     {
         auto energy_cumulative_ptr = energy_cumulative.ptr<ushort>(row);
         auto backtrack_ptr = backtrack.ptr<ushort>(row);
 
-        for (size_t col = 0; col < energy.cols; ++col)
+        for (size_t col = 0; col < m_energy_image.cols; ++col)
         {
             // Deal with first and last column
             int prev_col_range = (col == 0 ? 0 : 1);
-            int post_col_range = (col == energy.cols-1 ? 1 : 2);
+            int post_col_range = (col == m_energy_image.cols-1 ? 1 : 2);
 
             // Get idx of min energy from previous row, on 8-connected cols
             const auto result = std::min_element(
@@ -106,16 +107,12 @@ void SeamCarving::computeMinSeam(
             prev_row_iter++;
         }
     }
-}
 
-void SeamCarving::carveSeam(
-    cv::Mat &input,
-    cv::Mat &output,
-    cv::Mat &seam,
-    const cv::Mat &energy_cumulative,
-    const cv::Mat &backtrack)
-{
-    output = cv::Mat::zeros(cv::Size(input.cols-1, input.rows), input.type());
+    // Create output image with one less column
+    cv::Mat output = cv::Mat::zeros(cv::Size(input.cols-1, input.rows), input.type());
+
+    // Update the seam image to our input before seam removal
+    m_seam_image = input.clone();
 
     // Compute cumulative lowest energy pixel in bottom row
     const auto last_row = energy_cumulative.begin<ushort>()
@@ -128,9 +125,9 @@ void SeamCarving::carveSeam(
     for (size_t row = energy_cumulative.rows - 1; signed(row) >= 0; --row)
     {
         // Draw seam over original image
-        seam.at<cv::Vec3b>(row, col)[0] = 0;
-        seam.at<cv::Vec3b>(row, col)[1] = 0;
-        seam.at<cv::Vec3b>(row, col)[2] = 255;
+        m_seam_image.at<cv::Vec3b>(row, col)[0] = 0;
+        m_seam_image.at<cv::Vec3b>(row, col)[1] = 0;
+        m_seam_image.at<cv::Vec3b>(row, col)[2] = 255;
 
         // Assign pixels in the current row, ommitting our min cost seam
         input.row(row).colRange(0, col).copyTo(output.row(row).colRange(0, col));
@@ -140,17 +137,7 @@ void SeamCarving::carveSeam(
         auto backtrack_ptr = backtrack.ptr<ushort>(row);
         col = int(backtrack_ptr[col]);
     }
-}
 
-void SeamCarving::removeMinEnergyColumn(cv::Mat &input)
-{
-    computeEnergy(input, m_energy_image);
-
-    cv::Mat energy_cumulative, backtrack;
-    computeMinSeam(m_energy_image, energy_cumulative, backtrack);
-
-    cv::Mat output;
-    m_seam_image = input.clone();
-    carveSeam(input, output, m_seam_image, energy_cumulative, backtrack);
+    // Copy reference to output
     input = output;
 }
