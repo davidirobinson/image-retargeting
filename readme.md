@@ -22,5 +22,4 @@ cd build/src/
 
 ## TODO
 - Show example image in readme
-- Make agnostic to image channel size
 - Support increasing the size of images

@@ -12,6 +12,12 @@ SeamCarving::SeamCarving(const cv::Mat &_image) :
     m_retargeted_image(_image.clone()),
     m_seam_image(_image.clone())
 {
+    if (!_image.data)
+        throw std::runtime_error("Input image is empty");
+
+    if (_image.channels() != 1 && _image.channels() != 3)
+        throw std::runtime_error("Seam Carving only supports RGB & Grayscale images");
+
     // Compute energy upon contruction so that getter is valid
     computeEnergy(_image, m_energy_image);
 }
@@ -80,7 +86,10 @@ void SeamCarving::printReport()
 void SeamCarving::computeEnergy(const cv::Mat &input, cv::Mat &energy)
 {
     cv::Mat filtered;
-    cv::cvtColor(input, filtered, cv::COLOR_BGR2GRAY);
+    if (input.channels() == 1)
+        filtered = input.clone();
+    else
+        cv::cvtColor(input, filtered, cv::COLOR_BGR2GRAY);
     cv::GaussianBlur(filtered, filtered, cv::Size(5, 5), 0, 0);
 
     cv::Mat dx, dy;
@@ -154,7 +163,10 @@ void SeamCarving::removeMinEnergySeam(cv::Mat &input)
     cv::Mat output = cv::Mat::zeros(cv::Size(input.cols-1, input.rows), input.type());
 
     // Update the seam image to our input before seam removal
-    m_seam_image = input.clone();
+    if (input.channels() == 1)
+        cv::cvtColor(input, m_seam_image, cv::COLOR_GRAY2BGR);
+    else
+        m_seam_image = input.clone();
 
     // Compute cumulative lowest energy pixel in bottom row
     const auto last_row = energy_cumulative.begin<ushort>()
