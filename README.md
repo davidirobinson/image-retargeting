@@ -5,18 +5,17 @@ A C++ implementation of the [seam carving algorithm](https://en.wikipedia.org/wi
 ![seam-carving-demo](https://drive.google.com/uc?export=download&id=1m9_rYT0iicvadZGN3bbqUrUBroS_KZlR)
 
 ## Usage
+
 ### Dependencies
-OpenCV >= 3.0
+
+- [OpenCV (3.x)](https://opencv.org/)
 
 ### Build
-```
-mkdir build && cd build/
-cmake ..
-make -j<#-cores>
-```
 
-### Demo
-```
-cd build/src/
-./seam_carving_demo -i <path-to-image> -w <%-width> -h <%-height>
-```
+    mkdir -p build && cd build/
+    cmake .. && make -j<#-cores>
+
+### Run
+
+    cd build/
+    ./src/seam_carving_demo -i <path-to-image> -w <%-width> -h <%-height>
